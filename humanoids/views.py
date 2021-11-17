@@ -28,7 +28,6 @@ def all_humanoids(request):
     if len(search_words_list) > 0:
         humanoids = filter_matching_names(humanoids, search_words_list)
 
-
     paginator = HumanoidsPaginator()
     paginated_queryset = paginator.paginate_queryset(humanoids, request)
     serializer = HumanoidListSerializer(paginated_queryset, many=True)
@@ -55,7 +54,7 @@ def all_countries(request):
 
 def filter_matching_names(humanoids, search_words_list):
     # if client input has only one word, search for humanoids that
-    # contain that word in name or surname field
+    # contain (not exact match) that word in name or surname field
     if len(search_words_list) == 1:
         search_word = search_words_list[0]
         return humanoids.filter(Q(name__icontains=search_word) | Q(surname__icontains=search_word))
@@ -72,7 +71,7 @@ def filter_matching_names(humanoids, search_words_list):
                 .filter(full_name__icontains=word_between)
         
         # ...then filter humanoids that match each word only one time 
-        # (for example input ['Mario', 'Mar'] -> disacard 'Mario Rossi') ...
+        # (for example input ['Mario', 'Mario'] -> disacard 'Mario Rossi') ...
         res_humanoids = []
         for humanoid in humanoids:
             full_name_list = humanoid.full_name_list
