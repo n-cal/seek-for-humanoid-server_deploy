@@ -22,39 +22,12 @@ def all_humanoids(request):
 
     search_words_list = request.query_params.get('search', '').lower().split()
 
-    if len(search_words_list) > 10:
+    if len(search_words_list) > 100:
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
     if len(search_words_list) > 0:
+        humanoids = filter_matching_names(humanoids, search_words_list)
 
-        if len(search_words_list) == 1:
-            search_word = search_words_list[0]
-            humanoids = humanoids.filter(Q(name__icontains=search_word) | Q(surname__icontains=search_word))
-        else:
-            last_search_word = search_words_list.pop()
-
-            for search_word in search_words_list:
-                word_between = ' ' + search_word + ' '
-                humanoids = humanoids.annotate(full_name=Concat(V(' '), 'name', V(' '), 'surname', V(' ')))\
-                    .filter(full_name__icontains=word_between)
-
-            res_humanoids = []
-            for humanoid in humanoids:
-                full_name_list = humanoid.full_name_list
-
-                if len(search_words_list) + 1 > len(full_name_list):
-                    continue
-
-                for search_word in search_words_list:
-                    if search_word in full_name_list:
-                        full_name_list.remove(search_word)
-                
-                for remain_word in full_name_list:
-                    if last_search_word in remain_word:
-                        res_humanoids.append(humanoid)
-                        break
-
-            humanoids = res_humanoids
 
     paginator = HumanoidsPaginator()
     paginated_queryset = paginator.paginate_queryset(humanoids, request)
@@ -78,3 +51,43 @@ def humanoid_detail(request, id):
 def all_countries(request):
     countries = Humanoid.objects.distinct('country').values_list('country', flat=True)
     return Response(countries)
+
+
+def filter_matching_names(humanoids, search_words_list):
+    # if client input has only one word, search for humanoids that
+    # contain that word in name or surname field
+    if len(search_words_list) == 1:
+        search_word = search_words_list[0]
+        return humanoids.filter(Q(name__icontains=search_word) | Q(surname__icontains=search_word))
+
+    # if client input has more than one word...
+    else:
+        # ...save the last word for later ...
+        last_search_word = search_words_list.pop()
+
+        # ...filter humanoids by exact match for previous words...
+        for search_word in search_words_list:
+            word_between = ' ' + search_word + ' '
+            humanoids = humanoids.annotate(full_name=Concat(V(' '), 'name', V(' '), 'surname', V(' ')))\
+                .filter(full_name__icontains=word_between)
+        
+        # ...then filter humanoids that match each word only one time 
+        # (for example input ['Mario', 'Mar'] -> disacard 'Mario Rossi') ...
+        res_humanoids = []
+        for humanoid in humanoids:
+            full_name_list = humanoid.full_name_list
+
+            if len(search_words_list) + 1 > len(full_name_list):
+                continue
+
+            for search_word in search_words_list:
+                if search_word in full_name_list:
+                    full_name_list.remove(search_word)
+            
+            # ...and contain (not exact match) the last word saved earlier.
+            for remain_word in full_name_list:
+                if last_search_word in remain_word:
+                    res_humanoids.append(humanoid)
+                    break
+
+        return res_humanoids
