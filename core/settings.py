@@ -32,7 +32,7 @@ DEBUG = False
 
 ALLOWED_HOSTS = [
     'boiling-journey-35582.herokuapp.com',
-    'seek-for-humanoid.herokuapp.com/',
+    'seek-for-humanoid.herokuapp.com',
     '127.0.0.1', 
     'localhost'
 ]
