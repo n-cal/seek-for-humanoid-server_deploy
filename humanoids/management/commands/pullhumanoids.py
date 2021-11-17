@@ -40,13 +40,15 @@ def to_img_url(filename):
 
 
 class HumanoidImagesGenerator:
+    # need a variable here because fetching images too fast from thispersondoesnotexists.com
+    # often will give the same result. 
     last_content = None 
 
     def create_humanoid_images(self):
         sizes = [300, 75]
         try:
+            # try to fetch until we have a new result
             img_content = None
-            
             while(img_content == None or img_content == self.last_content):
                 img_response = requests.get('https://thispersondoesnotexist.com/image')
                 img_content = img_response.content
@@ -95,21 +97,21 @@ class Command(BaseCommand):
 
         images_generator = HumanoidImagesGenerator()
 
-        created_humanoid_count = 0
+        created_humanoids_count = 0
 
         for humanoid_data in all_humanoids_data:
             if not Humanoid.objects.filter(email=humanoid_data['email']).exists():
                 new_humanoid = Humanoid(**humanoid_data)
 
-                print(f'creating images for humanoid {created_humanoid_count + 1}/{HUMANOIDS_PER_REQUEST}...')
+                print(f'creating images for humanoid {created_humanoids_count + 1}/{HUMANOIDS_PER_REQUEST}...')
                 [img_filename, thumbnail_filename] = images_generator.create_humanoid_images()
 
                 new_humanoid.img_url = to_img_url(img_filename)
                 new_humanoid.thumbnail_url = to_img_url(thumbnail_filename)
 
                 new_humanoid.save()
-                created_humanoid_count += 1
-                print(f'humanoids {created_humanoid_count}/{HUMANOIDS_PER_REQUEST} saved.')
+                created_humanoids_count += 1
+                print(f'humanoids {created_humanoids_count}/{HUMANOIDS_PER_REQUEST} saved.')
         
-        print(f'{HUMANOIDS_PER_REQUEST - created_humanoid_count} humanoids already in database, wait until fakeJSON has generated new data.')
-        print(f'Created {created_humanoid_count}/{HUMANOIDS_PER_REQUEST} humanoids.')
+        print(f'{HUMANOIDS_PER_REQUEST - created_humanoids_count} humanoids already in database, run this command later.')
+        print(f'Created {created_humanoids_count}/{HUMANOIDS_PER_REQUEST} humanoids.')
