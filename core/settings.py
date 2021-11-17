@@ -30,7 +30,12 @@ FAKE_JSON_TOKEN = os.environ['FAKE_JSON_TOKEN']
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['boiling-journey-35582.herokuapp.com', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = [
+    'boiling-journey-35582.herokuapp.com',
+    'seek-for-humanoid.herokuapp.com/',
+    '127.0.0.1', 
+    'localhost'
+]
 
 CORS_ALLOW_ALL_ORIGINS = True
 
