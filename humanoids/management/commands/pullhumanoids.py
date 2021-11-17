@@ -3,10 +3,11 @@ from django.core.files.storage import default_storage
 import requests
 from PIL import Image
 from io import BytesIO
-from core.settings import FAKE_JSON_TOKEN
+from core.settings import FAKE_JSON_TOKEN, AWS_STORAGE_BUCKET_NAME, AWS_S3_REGION_NAME
 from humanoids.models import Humanoid
 import uuid
 
+HUMANOIDS_PER_REQUEST = 10
 
 def fetch_humanoids_data():
     payload = {
@@ -22,7 +23,7 @@ def fetch_humanoids_data():
             "mobile": "phoneMobile",
             "email": "internetEmail",
             "bio": "stringLong",
-            "_repeat": 10
+            "_repeat": HUMANOIDS_PER_REQUEST
         }
     }
     try:
@@ -35,7 +36,7 @@ def fetch_humanoids_data():
 
 
 def to_img_url(filename):
-    return  f'https://humanoidspictures.s3.eu-south-1.amazonaws.com/{filename}'
+    return  f'https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com/{filename}'
 
 
 class HumanoidImagesGenerator:
@@ -45,7 +46,7 @@ class HumanoidImagesGenerator:
         sizes = [300, 75]
         try:
             img_content = None
-
+            
             while(img_content == None or img_content == self.last_content):
                 img_response = requests.get('https://thispersondoesnotexist.com/image')
                 img_content = img_response.content
@@ -70,7 +71,7 @@ class HumanoidImagesGenerator:
 
             return result_filenames        
         except:
-
+            print('ERROR: generating humanoid images -> setting images to placeholders.')
             result_filenames = []
             for size in sizes:
                 filename = 'placeholder' + str(size) + '.jpg'
@@ -85,20 +86,30 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
+        print('fetching humanoids data...')
         all_humanoids_data = fetch_humanoids_data()
 
         if not all_humanoids_data:
+            print('ERROR: fetching humanoids data')
             return
 
         images_generator = HumanoidImagesGenerator()
+
+        created_humanoid_count = 0
 
         for humanoid_data in all_humanoids_data:
             if not Humanoid.objects.filter(email=humanoid_data['email']).exists():
                 new_humanoid = Humanoid(**humanoid_data)
 
+                print(f'creating images for humanoid {created_humanoid_count + 1}/{HUMANOIDS_PER_REQUEST}...')
                 [img_filename, thumbnail_filename] = images_generator.create_humanoid_images()
 
                 new_humanoid.img_url = to_img_url(img_filename)
                 new_humanoid.thumbnail_url = to_img_url(thumbnail_filename)
 
                 new_humanoid.save()
+                created_humanoid_count += 1
+                print(f'humanoids {created_humanoid_count}/{HUMANOIDS_PER_REQUEST} saved.')
+        
+        print(f'{HUMANOIDS_PER_REQUEST - created_humanoid_count} humanoids already in database, wait until fakeJSON has generated new data.')
+        print(f'Created {created_humanoid_count}/{HUMANOIDS_PER_REQUEST} humanoids.')
