@@ -41,7 +41,7 @@ def to_img_url(filename):
 
 class HumanoidImagesGenerator:
     # need a variable here because fetching images too fast from thispersondoesnotexists.com
-    # often will give the same result. 
+    # often will give the same result. This class prevents two humanoids with the same image.
     last_content = None 
 
     def create_humanoid_images(self):
@@ -112,7 +112,7 @@ class Command(BaseCommand):
                 new_humanoid.save()
                 created_humanoids_count += 1
                 print(f'humanoids {created_humanoids_count}/{HUMANOIDS_PER_REQUEST} saved.')
-                
+
         if(HUMANOIDS_PER_REQUEST > created_humanoids_count):
             print(f'{HUMANOIDS_PER_REQUEST - created_humanoids_count} humanoids already in database, try to run this command later.')
         print(f'Created {created_humanoids_count}/{HUMANOIDS_PER_REQUEST} humanoids.')
