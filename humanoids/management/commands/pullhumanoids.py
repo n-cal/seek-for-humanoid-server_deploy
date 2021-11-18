@@ -112,6 +112,7 @@ class Command(BaseCommand):
                 new_humanoid.save()
                 created_humanoids_count += 1
                 print(f'humanoids {created_humanoids_count}/{HUMANOIDS_PER_REQUEST} saved.')
-        
-        print(f'{HUMANOIDS_PER_REQUEST - created_humanoids_count} humanoids already in database, run this command later.')
+                
+        if(HUMANOIDS_PER_REQUEST > created_humanoids_count):
+            print(f'{HUMANOIDS_PER_REQUEST - created_humanoids_count} humanoids already in database, try to run this command later.')
         print(f'Created {created_humanoids_count}/{HUMANOIDS_PER_REQUEST} humanoids.')
