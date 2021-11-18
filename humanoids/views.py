@@ -67,11 +67,12 @@ def filter_matching_names(humanoids, search_words_list):
         # ...filter humanoids by exact match for previous words...
         for search_word in search_words_list:
             word_between = ' ' + search_word + ' '
+            # (this search was intended for multiple names eg. name='Fernando Jose' surname='Lopez Sanchez')
             humanoids = humanoids.annotate(full_name=Concat(V(' '), 'name', V(' '), 'surname', V(' ')))\
                 .filter(full_name__icontains=word_between)
         
         # ...then filter humanoids that match each word only one time 
-        # (for example input ['Mario', 'Mario'] -> disacard 'Mario Rossi') ...
+        # (for example input ['Mario', 'Mario'] -> discard 'Mario Rossi') ...
         res_humanoids = []
         for humanoid in humanoids:
             full_name_list = humanoid.full_name_list
